@@ -25,8 +25,8 @@ contacts, days since previous contact, outcome of the previous campaign).
 
 - **Target variable:** `y` - whether the client subscribed to a term deposit
   (`yes` / `no`)
-- **Training samples:** 4,069
-- **Test samples:** 454
+- **Training samples:** 4,068
+- **Test samples:** 453
 - **Class imbalance:** The target is heavily skewed toward `no` (most clients
   decline) - `88.5%`, which is why this project reports Precision, Recall, F1, AUC, and MCC
   alongside Accuracy - a model that always predicts `no` would still score high
@@ -128,21 +128,21 @@ model is automatically chosen.
 
 | ML Model Name | Accuracy | AUC | Precision | Recall | F1 | MCC |
 |---|---|---|---|---|---|---|
-| Logistic Regression |0.866|0.879|0.450|0.723|0.555|0.500|
-| Decision Tree |0.843|0.624|0.326|0.340|0.333|0.244|
-| kNN |0.822|0.744|0.345|0.606|0.440154|0.363|
-| Gaussian Naive Bayes |0.720|0.800|0.252|0.723|0.374|0.301|
-| Random Forest (Ensemble) |0.838|0.890|0.401|0.819|0.538|0.496|
+| Logistic Regression |0.821|0.867|0.359|0.711|0.477|0.416|
+| Decision Tree |0.859|0.644|0.380|0.365|0.372|0.293|
+| kNN |0.812|0.695|0.306|0.500|0.380|0.288|
+| Gaussian Naive Bayes |0.786|0.766|0.281|0.558|0.374|0.284|
+| Random Forest (Ensemble) |0.839|0.833|0.394|0.750|0.516|0.463|
 
 ### Comparison Table - Without Duration Feature
 
 | ML Model Name | Accuracy | AUC | Precision | Recall | F1 | MCC |
 |---|---|---|---|---|---|---|
-| Logistic Regression |0.738|0.704|0.223|0.511|0.311|0.202|
-| Decision Tree |0.818|0.583|0.245|0.277|0.260|0.157|
-| kNN |0.728|0.600|0.181|0.383|0.246|0.116|
-| Gaussian Naive Bayes |0.714|0.695|0.209|0.532|0.300|0.189|
-| Random Forest (Ensemble) |0.808|0.692|0.299|0.489|0.371|0.277|
+| Logistic Regression |0.801|0.753|0.284|0.481|0.357|0.261|
+| Decision Tree |0.814|0.586|0.242|0.288|0.263|0.159|
+| kNN |0.737|0.592|0.181|0.365|0.242|0.114|
+| Gaussian Naive Bayes |0.773|0.710|0.261|0.538|0.352|0.256|
+| Random Forest (Ensemble) |0.744|0.753|0.242|0.577|0.341|0.245|
 
 ---
 
@@ -150,12 +150,12 @@ model is automatically chosen.
 
 | ML Model Name | Observation about model performance |
 |---|---|
-| Logistic Regression |The strongest all-round performer on the without-duration set - highest AUC (0.704) and second-best recall (0.511), showing that even a simple linear boundary captures most of the real signal in this data. With duration added, it becomes the single best model by MCC (0.500) and F1 (0.555), and its recall jumps to 0.723, confirming duration is a genuinely powerful (if impractical-to-use-in-advance) predictor.|
-| Decision Tree |	The weakest model in both variants despite having the highest accuracy without duration (0.818) - a textbook case of accuracy being misleading under class imbalance. Its recall (0.277) and AUC (0.583) are the worst of the five, meaning it's mostly just predicting the majority class ("no") and getting rewarded for it by the accuracy metric alone. An untuned, unconstrained tree overfitting to noise is the likely cause.|
-| kNN |Consistently the second-weakest model. Without duration it has the lowest AUC (0.600) and weakest precision (0.181) of all five, suggesting the raw feature space doesn't separate cleanly by distance - likely hurt by the one-hot encoded categorical features diluting the influence of the more informative numeric ones. Duration helps it more than most (recall rises from 0.383 to 0.606), since it's a single dominant numeric feature that plays to KNN's distance-based strength.|
-| Naive Bayes |The clear recall specialist - highest recall in both variants (0.532 without duration, tied-highest 0.723 with duration) - but at a real precision cost (0.209 / 0.252, the lowest of all five both times). This is the expected trade-off from its independence assumption: it casts a wide net and rarely misses a true "yes," but calls "yes" too often to be precise. Best choice if minimizing missed subscribers is the only priority; weakest if wasted calls need controlling.|
-| Random Forest (Ensemble) |The most balanced model overall - best MCC (0.277 / 0.496) and best F1 (0.371 / 0.538) in both variants, plus the best precision without duration (0.299) and the best recall and AUC with duration (0.819 / 0.890). It's the only model that performs strongly across every metric simultaneously, rather than trading one off hard against another like GNB (recall vs. precision) or the Decision Tree (accuracy vs. everything else).|
-| **Overall Winner for your dataset?** |**Random Forest (Ensemble)** - on the without-duration set (the realistic, deployable model, since duration isn't known before a call is made), it has the best MCC and F1 of all five, the best precision, and solidly mid-to-high recall - no other model is this strong across the board without a major weakness elsewhere. Logistic Regression is the closest runner-up (best AUC, close recall), and is a reasonable second choice if interpretability matters more than squeezing out the last bit of performance.|
+| Logistic Regression |The most balanced performer without duration — highest precision (0.284), F1 (0.357), and MCC (0.261) of all five, and tied for the best AUC (0.753) alongside Random Forest. With duration added it stays strong (MCC 0.416, recall 0.712), confirming the linear boundary captures most of the real signal in this data even without the dominant duration feature.|
+| Decision Tree |	A case study in accuracy being misleading: highest accuracy in both variants (0.815 without duration, 0.859 with) but the worst AUC in both (0.586 / 0.644) and the worst or near-worst recall (0.288 / 0.365). It's defaulting heavily toward predicting "no" and getting rewarded for it by accuracy alone — the metric this project deliberately avoids leaning on for exactly this reason.|
+| kNN |	The weakest model in both variants — lowest AUC (0.592 without duration, 0.695 with) and lowest precision, recall, F1, and MCC without duration. The raw feature space likely doesn't separate cleanly by distance once categorical one-hot columns dilute the informative numeric ones; it improves somewhat with duration added (recall 0.365 → 0.500) since that's a single strong numeric signal that suits distance-based methods better.|
+| Gaussian Naive Bayes |A consistent, solid second-place finisher — second-best F1 (0.352) and MCC (0.256) without duration, trailing Logistic Regression by only a hair. It doesn't lead any single metric outright this time, but it's never the weakest either, making it a dependable, low-variance choice across both variants.|
+| Random Forest (Ensemble) |The clear recall leader — best recall in both variants (0.577 without duration, 0.750 with) and tied-best AUC without duration (0.753), plus the best AUC, precision, F1, and MCC of all five with duration included. Its precision/MCC lag slightly behind Logistic Regression on the without-duration set, so it trades a little balance for meaningfully higher recall — catching more true subscribers at the cost of a few more false positives.|
+| **Overall Winner for your dataset?** |**Random Forest (Ensemble)** - on the without-duration set, it ties for the best AUC and has clearly the best recall (0.577 vs. 0.481 for the runner-up), which matters most given this project's own framing: missing a real subscriber (false negative) is costlier than one extra wasted call (false positive). Logistic Regression is the strongest alternative if a single balanced score (MCC 0.261 vs. 0.245) is prioritized over recall specifically — the two are close enough that either is defensible depending on which trade-off the bank cares about more.|
 
 ---
 
