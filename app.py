@@ -187,3 +187,98 @@ else:
 
     with st.expander("Preview data", expanded=False):
         st.dataframe(st.session_state["test_dataset"])
+
+# Predict + evaluate selected model
+if st.session_state["test_dataset"] is not None:
+    df_input = st.session_state["test_dataset"].copy()
+
+    has_duration = "duration" in df_input.columns
+    has_target = "y" in df_input.columns
+
+    missing_cols = [c for c in EXPECTED_RAW_COLUMNS if c not in df_input.columns]
+    if missing_cols:
+        st.error(
+            "This dataset is missing columns the model needs to run: "
+            f"`{', '.join(missing_cols)}`. Please include all required features."
+        )
+        st.stop()
+
+    variant_dir = "with_duration" if has_duration else "without_duration"
+    model_path = SAVED_PIPELINES_DIR / variant_dir / f"{selected_model_key}_pipeline.joblib"
+
+    st.info(
+        f"Detected **{'with' if has_duration else 'without'} duration** data "
+        f"→ using the `{selected_model_label}` model trained {'with' if has_duration else 'without'} "
+        f"duration"
+    )
+
+    if not model_path.exists():
+        st.error(
+            f"To the devloper: Couldn't find a saved model at `{model_path}`."
+            " Make sure this model has been trained and exported for this data variant."
+        )
+        st.stop()
+
+    bundle = joblib.load(model_path)
+    pipeline = bundle["pipeline"]
+    threshold = bundle["threshold"]
+
+    X_for_prediction = df_input.drop(columns=["y"], errors="ignore")
+
+    try:
+        proba = pipeline.predict_proba(X_for_prediction)[:, -1]
+    except Exception as e:
+        st.error(f"Prediction failed: {e}")
+        st.stop()
+
+    pred = (proba >= threshold).astype(int)
+    pred_labels = np.where(pred == 1, "yes", "no")
+
+    # Predictions
+    st.subheader("Predictions")
+    results_df = df_input.copy()
+    results_df["predicted_probability"] = proba.round(4)
+    results_df["predicted_outcome"] = pred_labels
+    st.dataframe(results_df, use_container_width=True)
+
+    st.download_button(
+        "⬇️ Download predictions as CSV",
+        data=results_df.to_csv(index=False).encode("utf-8"),
+        file_name=f"{selected_model_key}_{variant_dir}_predictions.csv",
+        mime="text/csv",
+    )
+
+    # Evaluation (only if this is a labeled - test dataset)
+    if has_target:
+        y_true_raw = df_input["y"]
+        if pd.api.types.is_numeric_dtype(y_true_raw):
+            y_true = y_true_raw.astype(int)
+        else:
+            y_true = y_true_raw.astype(str).str.strip().str.lower().map({"yes": 1, "no": 0})
+
+        if y_true.isna().any():
+            st.warning(
+                "Some values in the `y` column couldn't be interpreted as "
+                "\"yes\"/\"no\" — evaluation metrics may be unreliable."
+            )
+
+        metrics, report_dict, cm_fig = get_evaluation_metrics(
+            selected_model_label, y_true, proba, threshold=threshold
+        )
+
+        st.subheader("Confusion Matrix")
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col1:
+            st.pyplot(cm_fig)
+
+        st.subheader("Classification Report")
+        report_df = pd.DataFrame(report_dict).T
+        st.dataframe(report_df.style.format("{:.3f}"), use_container_width=True)
+
+        st.subheader("Evaluation Metrics")
+        st.dataframe(pd.DataFrame([metrics]), use_container_width=True)
+    else:
+        st.caption(
+            "No `y` column detected in this dataset — showing predictions only. "
+            "Upload a labeled test set to also see evaluation metrics."
+        )
