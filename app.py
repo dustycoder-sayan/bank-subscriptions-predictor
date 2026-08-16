@@ -6,6 +6,9 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
+import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+
 APP_ROOT = Path(__file__).resolve().parent
 MODEL_DIR = APP_ROOT / "model"
 SAVED_PIPELINES_DIR = MODEL_DIR / "pipelines"
@@ -265,6 +268,37 @@ if st.session_state["test_dataset"] is not None:
         metrics, report_dict, cm_fig = get_evaluation_metrics(
             selected_model_label, y_true, proba, threshold=threshold
         )
+
+        # Deepcopy fig to display on page
+        safe_fig = Figure(figsize=(4, 3))
+        safe_ax = safe_fig.subplots()
+
+        # Copy all elements from cm_fig
+        for ax in cm_fig.get_axes():
+            # Transfer the image (the confusion matrix heatmap grid)
+            for im in ax.get_images():
+                safe_ax.imshow(im.get_array(), cmap=im.get_cmap(), extent=im.get_extent())
+            
+            # Matrix cell numbers
+            for text in ax.texts:
+                safe_ax.text(
+                    text.get_position()[0], text.get_position()[1], 
+                    text.get_text(), ha=text.get_ha(), va=text.get_va(), 
+                    color=text.get_color()
+                )
+            
+            # Titles and Ticks
+            safe_ax.set_title(ax.get_title())
+            safe_ax.set_xticks(ax.get_xticks())
+            safe_ax.set_yticks(ax.get_yticks())
+            safe_ax.set_xticklabels([label.get_text() for label in ax.get_xticklabels()])
+            safe_ax.set_yticklabels([label.get_text() for label in ax.get_yticklabels()])
+            safe_ax.set_xlabel(ax.get_xlabel())
+            safe_ax.set_ylabel(ax.get_ylabel())
+
+        safe_fig.tight_layout()
+
+        plt.close(cm_fig)
 
         st.subheader("Confusion Matrix")
         col1, col2, col3 = st.columns([1, 1, 1])
