@@ -138,3 +138,52 @@ def render_manual_entry_form() -> None:
         st.session_state["test_dataset"] = pd.DataFrame([manually_entered_data])
         st.session_state["test_source"] = "Manually entered data"
         st.rerun()
+
+if st.session_state["test_dataset"] is None:
+    input_mode = st.radio(
+        "How would you like to provide data?",
+        ["Upload a CSV", "Enter values manually"],
+        horizontal=True,
+    )
+ 
+    if input_mode == "Upload a CSV":
+        left, right = st.columns(2)
+ 
+        with left:
+            uploaded_file = st.file_uploader("Upload a test CSV", type=["csv"])
+            if uploaded_file is not None:
+                try:
+                    df_uploaded = pd.read_csv(uploaded_file)
+                except Exception as e:
+                    st.error(f"Couldn't read input file: {e}")
+                    st.stop()
+                st.session_state["test_dataset"] = df_uploaded
+                st.session_state["test_source"] = f"Uploaded file: {uploaded_file.name}"
+                st.rerun()
+ 
+        with right:
+            st.write("")  # vertical alignment nudge
+            st.write("")
+            if BUNDLED_TEST_DATA_PATH.exists():
+                if st.button("Use bundled test_data.csv instead"):
+                    st.session_state["test_dataset"] = pd.read_csv(BUNDLED_TEST_DATA_PATH)
+                    st.session_state["test_source"] = "Bundled test_data.csv"
+                    st.rerun()
+    else:
+        render_manual_entry_form()
+else:
+    top_left, top_right = st.columns([4, 1])
+    with top_left:
+        st.success(
+            f"Using data from **{st.session_state['test_source']}** "
+            f"({len(st.session_state['test_dataset'])} row(s)). "
+            "This stays in place across model changes until you remove it."
+        )
+    with top_right:
+        if st.button("🗑️ Remove dataset"):
+            st.session_state["test_dataset"] = None
+            st.session_state["test_source"] = None
+            st.rerun()
+
+    with st.expander("Preview data", expanded=False):
+        st.dataframe(st.session_state["test_dataset"])
