@@ -34,8 +34,8 @@ contacts, days since previous contact, outcome of the previous campaign).
 - **`duration` feature:** Each model was trained in two variants — one *including*
   the last call's duration, and one *excluding* it. `duration` is only known
   *after* a call has happened, so a model trained with it isn't usable for
-  deciding who to call in advance; it's kept as a secondary/benchmark comparison
-  rather than the primary deployable model.
+  deciding who to call in advance; it's kept as a secondary model which can be used
+  once `duration` of a call is known. 
 
 ---
 
@@ -80,6 +80,15 @@ train/test splits and identical preprocessing:
 - **Random Forest (Ensemble)** — an ensemble of decision trees trained on
   bootstrapped samples; generally more robust than a single tree.
 
+Each model was trained on two variants of the same dataset -
+- With the `duration` feature : Model set to be used when the duration of a 
+  call is known.
+- Without the `duration` feature : Model set to be used when the duration of a 
+  call is `NOT` known.
+
+When using in the application, based on the dataset provided, the appropriate
+model is automatically chosen. 
+
 ### Comparison Table — Without Duration Feature
 
 | ML Model Name | Accuracy | AUC | Precision | Recall | F1 | MCC |
@@ -112,6 +121,10 @@ train/test splits and identical preprocessing:
 | Naive Bayes | |
 | Random Forest (Ensemble) | |
 | **Overall Winner for your dataset?** | |
+
+---
+
+### Additional Observation on the feature `duration`
 
 ---
 
