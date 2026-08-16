@@ -171,7 +171,7 @@ model is automatically chosen.
 ## Running the App
 
 To use the features, checkout the deployed application on Streamlit Cloud -\
-[https://bank-subscriptions-predictor-sayanbasu.streamlit.app/](https://bank-subscriptions-predictor-sayanbasu.streamlit.app/)
+[https://bank-subscriptions-predictor-2025ac05252-sayanbasu.streamlit.app/]([https://bank-subscriptions-predictor-sayanbasu.streamlit.app/](https://bank-subscriptions-predictor-2025ac05252-sayanbasu.streamlit.app/))
 
 To clone and run it on your local machine - 
 ```bash
